@@ -3,9 +3,6 @@
   "buildCommand": "npm run build || true",
   "devCommand": "npm run dev",
   "public": false,
-  "api": {
-    "runtime": "nodejs18.x"
-  },
   "rewrites": [
     {
       "source": "/api/(.*)",
