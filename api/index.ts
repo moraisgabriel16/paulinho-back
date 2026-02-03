@@ -8,32 +8,33 @@ import routes from '../src/routes';
 
 dotenv.config();
 
-let app: express.Application;
+const app = express();
 
-const initializeApp = () => {
-  if (app) return app;
+// Inicializar conexão com MongoDB
+connectDB().catch(err => console.error('Erro ao conectar MongoDB:', err));
 
-  app = express();
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-  connectDB();
+// Health check rápido
+app.get('/', (req, res) => {
+  res.json({ status: 'API está online', timestamp: new Date().toISOString() });
+});
 
-  app.use(cors());
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
+// Remover /api já que Vercel já mapeia /api para esta pasta
+app.use('/', routes);
 
-  // Remover /api já que Vercel já mapeia /api para esta pasta
-  app.use('/', routes);
+// Tratamento de erros
+app.use(errorHandler);
 
-  app.use(errorHandler);
-
-  app.use((req, res) => {
-    res.status(404).json({ message: 'Rota não encontrada' });
-  });
-
-  return app;
-};
+// Handler 404
+app.use((req, res) => {
+  console.log(`404 - Rota não encontrada: ${req.method} ${req.path}`);
+  res.status(404).json({ message: 'Rota não encontrada', path: req.path });
+});
 
 export default (req: VercelRequest, res: VercelResponse) => {
-  const handler = initializeApp();
-  handler(req, res);
+  return app(req, res);
 };
