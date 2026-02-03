@@ -14,14 +14,14 @@ const connectDB = async () => {
     
     const options = {
       // Aumentar timeouts para serverless (Vercel cold starts)
-      serverSelectionTimeoutMS: 20000,
-      socketTimeoutMS: 20000,
-      connectTimeoutMS: 20000,
+      serverSelectionTimeoutMS: 30000,
+      socketTimeoutMS: 30000,
+      connectTimeoutMS: 30000,
       // Connection pool otimizado para serverless
-      maxPoolSize: 10,
-      minPoolSize: 1,
+      maxPoolSize: 5,
+      minPoolSize: 0,
       // Não reusar conexões antigas
-      maxIdleTimeMS: 45000,
+      maxIdleTimeMS: 60000,
       retryWrites: true,
       // Retry automático para transient errors
       retryReads: true,

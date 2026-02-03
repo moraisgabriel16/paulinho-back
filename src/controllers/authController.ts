@@ -94,7 +94,7 @@ export const login = async (req: Request, res: Response) => {
       const user = await Promise.race([
         User.findOne({ email }).select('+password'),
         new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Database query timeout')), 8000)
+          setTimeout(() => reject(new Error('Database query timeout')), 25000)
         )
       ]) as IUser | null;
       
