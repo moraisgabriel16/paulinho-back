@@ -14,17 +14,21 @@ const connectDB = async () => {
     
     const options = {
       // Aumentar timeouts para serverless (Vercel cold starts)
-      serverSelectionTimeoutMS: 15000,
-      socketTimeoutMS: 15000,
-      connectTimeoutMS: 15000,
+      serverSelectionTimeoutMS: 20000,
+      socketTimeoutMS: 20000,
+      connectTimeoutMS: 20000,
       // Timeout para operações gerais
-      maxCommitTimeMS: 15000,
+      maxCommitTimeMS: 20000,
       // Connection pool otimizado para serverless
       maxPoolSize: 10,
-      minPoolSize: 2,
+      minPoolSize: 1,
       // Não reusar conexões antigas
-      maxIdleTimeMS: 30000,
+      maxIdleTimeMS: 45000,
       retryWrites: true,
+      // Retry automático para transient errors
+      retryReads: true,
+      // Family 4 = IPv4 (pode ajudar com conectividade)
+      family: 4,
     };
 
     console.log('🔄 Conectando ao MongoDB...');
