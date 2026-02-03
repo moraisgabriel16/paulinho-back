@@ -1,93 +1,109 @@
-module.exports = (req, res) => {
-  // CORS headers
+// Simple Vercel Serverless Handler
+module.exports = async (req, res) => {
+  // CORS
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'X-CSRF-Token,X-Requested-With,Accept,Accept-Version,Content-Length,Content-MD5,Content-Type,Date,X-Api-Version,Authorization'
+  );
 
-  // Handle preflight
+  // Handle OPTIONS
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
   }
 
-  // Log para debug
-  console.log(`${req.method} ${req.url}`);
-
-  // Health check
-  if (req.url === '/api/health' && req.method === 'GET') {
-    return res.status(200).json({
-      status: 'API funcionando',
-      timestamp: new Date().toISOString(),
+  // Parse JSON body
+  let body = '';
+  let data = {};
+  
+  if (req.method !== 'GET') {
+    await new Promise((resolve) => {
+      req.on('data', chunk => {
+        body += chunk.toString();
+      });
+      req.on('end', () => {
+        try {
+          data = JSON.parse(body);
+        } catch (e) {
+          data = {};
+        }
+        resolve();
+      });
     });
   }
 
-  // Root
-  if (req.url === '/' && req.method === 'GET') {
+  const url = req.url || '/';
+  const method = req.method;
+
+  // Routes
+  
+  // GET /api/health
+  if (method === 'GET' && url === '/api/health') {
     return res.status(200).json({
-      message: 'API Paulinho Online',
+      status: 'ok',
+      message: 'API is running',
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  // GET /
+  if (method === 'GET' && url === '/') {
+    return res.status(200).json({
+      name: 'Paulinho API',
       version: '1.0.0',
+      status: 'online'
     });
   }
 
-  // Register
-  if (req.url === '/api/auth/register' && req.method === 'POST') {
-    let body = '';
-    req.on('data', chunk => {
-      body += chunk.toString();
-    });
-    req.on('end', () => {
-      try {
-        const data = JSON.parse(body);
-        if (!data.name || !data.email || !data.password) {
-          return res.status(400).json({ error: 'Dados obrigatórios faltando' });
-        }
-        return res.status(201).json({
-          token: 'jwt_token_aqui',
-          user: {
-            id: 'user123',
-            name: data.name,
-            email: data.email,
-            role: data.role || 'professor'
-          }
-        });
-      } catch (e) {
-        return res.status(400).json({ error: 'JSON inválido' });
+  // POST /api/auth/register
+  if (method === 'POST' && url === '/api/auth/register') {
+    const { name, email, password, role } = data;
+    
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        error: 'name, email and password are required'
+      });
+    }
+
+    return res.status(201).json({
+      token: 'jwt_token_placeholder_12345',
+      user: {
+        id: 'user_' + Date.now(),
+        name,
+        email,
+        role: role || 'professor'
       }
     });
-    return;
   }
 
-  // Login
-  if (req.url === '/api/auth/login' && req.method === 'POST') {
-    let body = '';
-    req.on('data', chunk => {
-      body += chunk.toString();
-    });
-    req.on('end', () => {
-      try {
-        const data = JSON.parse(body);
-        if (!data.email || !data.password) {
-          return res.status(400).json({ error: 'Email e senha obrigatórios' });
-        }
-        return res.status(200).json({
-          token: 'jwt_token_aqui',
-          user: {
-            id: 'user123',
-            email: data.email,
-            role: 'professor'
-          }
-        });
-      } catch (e) {
-        return res.status(400).json({ error: 'JSON inválido' });
+  // POST /api/auth/login
+  if (method === 'POST' && url === '/api/auth/login') {
+    const { email, password } = data;
+    
+    if (!email || !password) {
+      return res.status(400).json({
+        error: 'email and password are required'
+      });
+    }
+
+    return res.status(200).json({
+      token: 'jwt_token_placeholder_12345',
+      user: {
+        id: 'user_123',
+        email,
+        role: 'professor'
       }
     });
-    return;
   }
 
   // 404
-  res.status(404).json({
-    error: 'Rota não encontrada',
-    path: req.url,
-    method: req.method
+  return res.status(404).json({
+    error: 'Not Found',
+    message: 'Route not found',
+    path: url,
+    method: method
   });
 };
