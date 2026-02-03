@@ -21,7 +21,8 @@ const initializeApp = () => {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
-  app.use('/api', routes);
+  // Remover /api já que Vercel já mapeia /api para esta pasta
+  app.use('/', routes);
 
   app.use(errorHandler);
 
