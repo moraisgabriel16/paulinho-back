@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
 let cachedConnection: any = null;
+let isConnecting = false;
 
 const connectDB = async () => {
   // Return cached connection if already connected
@@ -9,34 +10,44 @@ const connectDB = async () => {
     return cachedConnection;
   }
 
+  // Prevent multiple simultaneous connection attempts
+  if (isConnecting) {
+    console.log('⏳ Connection already in progress...');
+    // Wait up to 20s for connection
+    let attempts = 0;
+    while (!cachedConnection && attempts < 20) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (cachedConnection && cachedConnection.readyState === 1) {
+        return cachedConnection;
+      }
+      attempts++;
+    }
+  }
+
+  isConnecting = true;
+
   try {
     const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/avaliacao-educacao-fisica';
     
-    const options = {
-      // Aumentar timeouts para serverless (Vercel cold starts)
+    console.log('🔄 Conectando ao MongoDB...');
+    
+    const connection = await mongoose.connect(mongoURI, {
       serverSelectionTimeoutMS: 30000,
-      socketTimeoutMS: 30000,
       connectTimeoutMS: 30000,
-      // Connection pool otimizado para serverless
+      socketTimeoutMS: 30000,
       maxPoolSize: 5,
-      minPoolSize: 0,
-      // Não reusar conexões antigas
       maxIdleTimeMS: 60000,
       retryWrites: true,
-      // Retry automático para transient errors
-      retryReads: true,
-      // Family 4 = IPv4 (pode ajudar com conectividade)
-      family: 4,
-    };
-
-    console.log('🔄 Conectando ao MongoDB...');
-    const connection = await mongoose.connect(mongoURI, options);
+    });
     
     cachedConnection = connection.connection;
+    isConnecting = false;
     console.log(`✅ MongoDB conectado com sucesso`);
     return cachedConnection;
   } catch (error: any) {
+    isConnecting = false;
     console.error('❌ Erro ao conectar ao MongoDB:', error.message);
+    
     // Não faz process.exit em produção
     if (process.env.NODE_ENV !== 'production') {
       process.exit(1);
