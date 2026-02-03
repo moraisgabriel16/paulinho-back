@@ -10,7 +10,11 @@ const connectDB = async () => {
     return mongoose.connection;
   } catch (error) {
     console.error('❌ Erro ao conectar ao MongoDB:', error);
-    process.exit(1);
+    // Não faz process.exit em produção
+    if (process.env.NODE_ENV !== 'production') {
+      process.exit(1);
+    }
+    return null;
   }
 };
 
