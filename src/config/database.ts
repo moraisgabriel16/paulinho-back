@@ -13,12 +13,18 @@ const connectDB = async () => {
     const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/avaliacao-educacao-fisica';
     
     const options = {
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 5000,
-      connectTimeoutMS: 5000,
-      retryWrites: true,
+      // Aumentar timeouts para serverless (Vercel cold starts)
+      serverSelectionTimeoutMS: 15000,
+      socketTimeoutMS: 15000,
+      connectTimeoutMS: 15000,
+      // Timeout para operações gerais
+      maxCommitTimeMS: 15000,
+      // Connection pool otimizado para serverless
       maxPoolSize: 10,
       minPoolSize: 2,
+      // Não reusar conexões antigas
+      maxIdleTimeMS: 30000,
+      retryWrites: true,
     };
 
     console.log('🔄 Conectando ao MongoDB...');

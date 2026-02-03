@@ -89,35 +89,55 @@ export const login = async (req: Request, res: Response) => {
 
     const { email, password } = req.body;
 
-    // Encontrar usuário
-    const user = await User.findOne({ email }).select('+password');
-    if (!user) {
-      return res.status(401).json({ message: 'Email ou senha inválidos' });
+    try {
+      // Encontrar usuário
+      const user = await Promise.race([
+        User.findOne({ email }).select('+password'),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Database query timeout')), 8000)
+        )
+      ]) as IUser | null;
+      
+      if (!user) {
+        return res.status(401).json({ message: 'Email ou senha inválidos' });
+      }
+
+      // Comparar senhas
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        return res.status(401).json({ message: 'Email ou senha inválidos' });
+      }
+
+      // Gerar token
+      const token = generateToken(user._id.toString());
+
+      // Responder sem a senha
+      const userResponse = {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        school: user.school,
+      };
+
+      res.status(200).json({
+        message: 'Login realizado com sucesso',
+        token,
+        user: userResponse,
+      });
+    } catch (dbError: any) {
+      console.error('Database error:', dbError.message);
+      
+      // Se for timeout de database, retornar erro específico
+      if (dbError.message.includes('timeout') || dbError.message.includes('buffering')) {
+        return res.status(503).json({ 
+          message: 'Serviço temporariamente indisponível. Tente novamente em alguns segundos.',
+          details: 'Database connection timeout'
+        });
+      }
+      
+      throw dbError;
     }
-
-    // Comparar senhas
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      return res.status(401).json({ message: 'Email ou senha inválidos' });
-    }
-
-    // Gerar token
-    const token = generateToken(user._id.toString());
-
-    // Responder sem a senha
-    const userResponse = {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      school: user.school,
-    };
-
-    res.status(200).json({
-      message: 'Login realizado com sucesso',
-      token,
-      user: userResponse,
-    });
   } catch (error) {
     console.error('Erro ao fazer login:', error);
     res.status(500).json({ message: 'Erro ao fazer login' });
