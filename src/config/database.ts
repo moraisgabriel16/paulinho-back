@@ -17,8 +17,6 @@ const connectDB = async () => {
       serverSelectionTimeoutMS: 20000,
       socketTimeoutMS: 20000,
       connectTimeoutMS: 20000,
-      // Timeout para operações gerais
-      maxCommitTimeMS: 20000,
       // Connection pool otimizado para serverless
       maxPoolSize: 10,
       minPoolSize: 1,
